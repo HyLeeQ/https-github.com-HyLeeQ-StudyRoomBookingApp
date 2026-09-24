@@ -22,6 +22,7 @@ interface QRModalProps {
   room?: Room;
   slot?: TimeSlot;
   onClose: () => void;
+  onCancel?: () => void;
 }
 
 export const QRModal: React.FC<QRModalProps> = ({
@@ -30,6 +31,7 @@ export const QRModal: React.FC<QRModalProps> = ({
   room,
   slot,
   onClose,
+  onCancel,
 }) => {
   const [countdownText, setCountdownText] = useState<string>('');
 
@@ -113,14 +115,27 @@ export const QRModal: React.FC<QRModalProps> = ({
             </View>
           </View>
 
-          {/* Action Button */}
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={onClose}
-            style={styles.doneButton}
-          >
-            <Text style={styles.doneButtonText}>Đóng</Text>
-          </TouchableOpacity>
+          {/* Action Buttons */}
+          <View style={styles.modalActionButtons}>
+            {booking.status === 'active' && onCancel && (
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={onCancel}
+                style={styles.cancelModalButton}
+              >
+                <Ionicons name="trash-outline" size={16} color="#DC2626" style={{ marginRight: 6 }} />
+                <Text style={styles.cancelModalButtonText}>Hủy đặt phòng này</Text>
+              </TouchableOpacity>
+            )}
+
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={onClose}
+              style={styles.doneButton}
+            >
+              <Text style={styles.doneButtonText}>Đóng</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     </Modal>
@@ -240,6 +255,26 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
     color: '#1E293B',
+  },
+  modalActionButtons: {
+    width: '100%',
+    gap: 10,
+  },
+  cancelModalButton: {
+    width: '100%',
+    backgroundColor: '#FEF2F2',
+    paddingVertical: 13,
+    borderRadius: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#FECACA',
+  },
+  cancelModalButtonText: {
+    color: '#DC2626',
+    fontSize: 14,
+    fontWeight: '700',
   },
   doneButton: {
     width: '100%',

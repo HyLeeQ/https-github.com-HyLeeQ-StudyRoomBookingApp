@@ -68,11 +68,10 @@ export const isSlotInPast = (dateStr: string, endTimeStr: string): boolean => {
 };
 
 /**
- * Checks whether user can cancel booking (status active AND slot start is in the future)
+ * Checks whether user can cancel booking
  */
-export const canCancelBooking = (dateStr: string, startTimeStr: string): boolean => {
-  const slotStart = getSlotStartDate(dateStr, startTimeStr);
-  return new Date().getTime() < slotStart.getTime();
+export const canCancelBooking = (_dateStr: string, _startTimeStr: string): boolean => {
+  return true;
 };
 
 /**

@@ -122,25 +122,25 @@ export const MyBookingsScreen: React.FC = () => {
         {/* Action Buttons */}
         <View style={styles.cardActionRow}>
           {isActive && (
-            <TouchableOpacity
-              activeOpacity={0.7}
-              onPress={() => handleOpenQR(item)}
-              style={styles.qrActionBtn}
-            >
-              <Ionicons name="qr-code-outline" size={16} color="#2563EB" />
-              <Text style={styles.qrActionText}>Xem mã QR check-in</Text>
-            </TouchableOpacity>
-          )}
+            <>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => handleOpenQR(item)}
+                style={styles.qrActionBtn}
+              >
+                <Ionicons name="qr-code-outline" size={16} color="#2563EB" />
+                <Text style={styles.qrActionText}>Xem mã QR</Text>
+              </TouchableOpacity>
 
-          {isCancellable && (
-            <TouchableOpacity
-              activeOpacity={0.7}
-              onPress={() => handleCancelReservation(item)}
-              style={styles.cancelActionBtn}
-            >
-              <Ionicons name="close-circle-outline" size={16} color="#EF4444" />
-              <Text style={styles.cancelActionText}>Hủy đặt phòng</Text>
-            </TouchableOpacity>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => handleCancelReservation(item)}
+                style={styles.cancelActionBtn}
+              >
+                <Ionicons name="trash-outline" size={16} color="#EF4444" />
+                <Text style={styles.cancelActionText}>Hủy phòng</Text>
+              </TouchableOpacity>
+            </>
           )}
 
           {!isActive && (
@@ -227,6 +227,13 @@ export const MyBookingsScreen: React.FC = () => {
         room={selectedRoomForModal}
         slot={selectedSlotForModal}
         onClose={() => setSelectedQRBooking(null)}
+        onCancel={() => {
+          if (selectedQRBooking) {
+            const bookingToCancel = selectedQRBooking;
+            setSelectedQRBooking(null);
+            handleCancelReservation(bookingToCancel);
+          }
+        }}
       />
     </SafeAreaView>
   );
