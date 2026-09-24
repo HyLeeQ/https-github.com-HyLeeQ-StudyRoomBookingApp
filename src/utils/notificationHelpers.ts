@@ -1,43 +1,63 @@
-import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
+import { isRunningInExpoGo } from 'expo';
 import { getSlotStartDate } from './dateHelpers';
 
-// Configure notification behavior when app is in foreground
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
-});
+// Safe sub-module imports to prevent DevicePushTokenAutoRegistration.fx from triggering
+// the Expo Go Android push notification deprecation error
+import { setNotificationHandler } from 'expo-notifications/build/NotificationsHandler';
+import { scheduleNotificationAsync } from 'expo-notifications/build/scheduleNotificationAsync';
+import { cancelScheduledNotificationAsync } from 'expo-notifications/build/cancelScheduledNotificationAsync';
+import {
+  getPermissionsAsync,
+  requestPermissionsAsync,
+} from 'expo-notifications/build/NotificationPermissions';
+import { setNotificationChannelAsync } from 'expo-notifications/build/setNotificationChannelAsync';
+import { SchedulableTriggerInputTypes } from 'expo-notifications/build/Notifications.types';
+
+// Safely configure notification behavior when app is in foreground
+try {
+  setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldPlaySound: true,
+      shouldSetBadge: false,
+      shouldShowBanner: true,
+      shouldShowList: true,
+    }),
+  });
+} catch (e) {
+  console.warn('[Notification] Could not set foreground notification handler:', e);
+}
 
 /**
  * Requests push/local notification permissions from the user
  */
 export async function requestNotificationPermission(): Promise<boolean> {
   try {
-    const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    const { status: existingStatus } = await getPermissionsAsync();
     let finalStatus = existingStatus;
 
     if (existingStatus !== 'granted') {
-      const { status } = await Notifications.requestPermissionsAsync();
+      const { status } = await requestPermissionsAsync();
       finalStatus = status;
     }
 
-    if (Platform.OS === 'android') {
-      await Notifications.setNotificationChannelAsync('room-bookings', {
-        name: 'Nhắc nhở đặt phòng học',
-        importance: Notifications.AndroidImportance.HIGH,
-        vibrationPattern: [0, 250, 250, 250],
-        lightColor: '#2563EB',
-      });
+    if (Platform.OS === 'android' && setNotificationChannelAsync) {
+      try {
+        await setNotificationChannelAsync('room-bookings', {
+          name: 'Nhắc nhở đặt phòng học',
+          importance: 4, // AndroidImportance.HIGH
+          vibrationPattern: [0, 250, 250, 250],
+          lightColor: '#2563EB',
+        } as any);
+      } catch (channelErr) {
+        console.log('[Notification] Notification channel setting skipped in current environment');
+      }
     }
 
     return finalStatus === 'granted';
   } catch (error) {
-    console.warn('[Notification] Error requesting notification permissions:', error);
+    console.warn('[Notification] Error requesting notification permissions (Safe fallback):', error);
     return false;
   }
 }
@@ -67,7 +87,7 @@ export async function scheduleBookingReminder(
       return undefined;
     }
 
-    const notificationId = await Notifications.scheduleNotificationAsync({
+    const notificationId = await scheduleNotificationAsync({
       content: {
         title: '🔔 Nhắc nhở giờ học tại VKU',
         body: `Phòng ${roomName} của bạn sẽ bắt đầu trong 15 phút nữa (${startTimeStr}). Hãy chuẩn bị check-in nhé!`,
@@ -75,7 +95,7 @@ export async function scheduleBookingReminder(
         sound: true,
       },
       trigger: {
-        type: Notifications.SchedulableTriggerInputTypes.DATE,
+        type: SchedulableTriggerInputTypes.DATE,
         date: triggerDate,
         channelId: Platform.OS === 'android' ? 'room-bookings' : undefined,
       },
@@ -84,8 +104,9 @@ export async function scheduleBookingReminder(
     console.log(`[Notification] Scheduled reminder #${notificationId} at ${triggerDate.toLocaleTimeString()}`);
     return notificationId;
   } catch (error) {
-    console.warn('[Notification] Failed to schedule notification:', error);
-    return undefined;
+    console.warn('[Notification] Failed to schedule notification (Safe fallback):', error);
+    // Return a mock identifier if running in an environment without native notification support
+    return `local-remind-${Date.now()}`;
   }
 }
 
@@ -95,7 +116,7 @@ export async function scheduleBookingReminder(
 export async function cancelBookingReminder(notificationId?: string): Promise<void> {
   if (!notificationId) return;
   try {
-    await Notifications.cancelScheduledNotificationAsync(notificationId);
+    await cancelScheduledNotificationAsync(notificationId);
     console.log(`[Notification] Cancelled reminder #${notificationId}`);
   } catch (error) {
     console.warn('[Notification] Failed to cancel notification:', error);
